@@ -1,12 +1,7 @@
 <template>
   <div id="drawing">
-    <div v-if="universe">
-      <!-- <button @click="back" :disabled="bigbang">Back</button> -->
-      <button @click="tick" :disabled="blackhole">Tick</button>
-    </div>
-
-    <input type="file" name="file" @change="readFile">
-    <h5>Clock: {{ this.clock }}</h5>
+      <input v-if="!connected" v-model="url"/>
+      <button v-if="!connected" @click="connect">Connect</button>
   </div>
 </template>
 
@@ -18,7 +13,7 @@ import FileReaderPromise from '../core/util/FileReaderPromise';
 
 export default {
   mounted() {
-    this.$on('tick', () => {
+    this.$on('tick', () => { 
       this.drawer.nextClock();
     });
 
@@ -28,9 +23,33 @@ export default {
     return {
       clock: 0,
       universe: null,
-    };
+      url: 'ws://localhost:9889',
+      websocket: null,
+      connected: false,
+    };   
   },
   methods: {
+    connect() {
+      this.universe = new EventUniverse('');
+      this.drawer = new TraceDrawer(SVG('drawing'), this.universe);
+
+      this.webSocket = new WebSocket(this.url);
+
+      this.webSocket.onopen = () => {
+        this.connected = true;
+      };
+
+      this.webSocket.onmessage = (event) => {
+       // console.log(event.data);
+        const jsonContent = JSON.parse(event.data);
+        if (jsonContent !== undefined && jsonContent != null) {
+          this.universe.push(jsonContent);
+          this.$emit('tick', this.clock);
+        }
+      };
+
+      this.back();
+    },
     tick() {
       this.clock += 1;
       this.$emit('tick', this.clock);

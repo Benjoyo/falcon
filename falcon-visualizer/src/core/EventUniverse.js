@@ -10,7 +10,7 @@ export default class EventUniverse {
     this.events = {};
     this.orderedEvents = [];
     this.orderedThreads = [];
-    this[eventsConstructor](data);
+    // this[eventsConstructor](data);
   }
 
   get count() {
@@ -25,6 +25,24 @@ export default class EventUniverse {
     return this.subset(clock, clock + 1);
   }
 
+  get(clock) {
+    return this.orderedEvents[clock];
+  }
+
+  push(record) {
+    const event = EventFactory.build(record);
+    this.orderedEvents.push(event);
+
+    const threadName = event.getThreadIdentifier();
+
+    if (this.getThreadOrderedIndex(threadName) < 0) {
+      this.orderedThreads.push({
+        pid: event.pid,
+        thread: event.thread,
+      });
+    }
+  }
+
   subset(startClock, endClock) {
     return this.orderedEvents.filter(e => e.clock >= startClock && e.clock < endClock);
   }
@@ -33,6 +51,7 @@ export default class EventUniverse {
     return this.events[id] || null;
   }
 
+  /*
   [eventsConstructor](data) {
     data.forEach((record) => {
       const event = EventFactory.build(record);
@@ -50,6 +69,7 @@ export default class EventUniverse {
     this[clusterThreadsByPid]();
     // this[filterUnrelevantThreads]();
   }
+  */
 
   [clusterThreadsByPid]() {
     this.orderedThreads = this.orderedThreads.sort((a, b) => {
@@ -89,7 +109,7 @@ export default class EventUniverse {
 
   getThreadOrderedIndex(name) {
     const [pid, thread] = name.split('||');
-    console.log(`name: ${name}, pid: ${pid}, thread: ${thread}`);
+    //console.log(`name: ${name}, pid: ${pid}, thread: ${thread}`);
 
     return this.orderedThreads.findIndex(t => t.pid === pid && t.thread === thread);
   }
